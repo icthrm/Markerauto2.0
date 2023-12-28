@@ -95,7 +95,6 @@ Markerauto2: command line arguments
 
   - **-t:** Enable fast mode. In the fast mode, a two-stage algorithm for the fiducial marker correspondence establishment is used. Otherwise, the software uses the global algorithm to match the fiducial markers.
 
-We have supplied examples of the input file format on Github (\url{https://github.com/icthrm/Markerauto2.git}), which users can downloaded and viewed.
 
 ## Explanation of the content in the output folder
 
