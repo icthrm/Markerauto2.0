@@ -1,0 +1,15 @@
+#set(DATAF_SRCS )
+aux_source_directory(. DATAF_SRCS)
+
+MESSAGE(STATUS "building dataf")
+
+set(ANN_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/lib/ann_1.1_char/include)
+
+include_directories(${PROJECT_SOURCE_DIR} ${ANN_INCLUDE_DIR})
+
+add_library (dataf STATIC ${DATAF_SRCS})
+
+target_link_libraries(dataf)
+
+set_target_properties(dataf PROPERTIES OUTPUT_NAME "dataf")
+set_target_properties(dataf PROPERTIES CLEAN_DIRECT_OUTPUT 1)

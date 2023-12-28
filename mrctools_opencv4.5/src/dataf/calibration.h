@@ -1,0 +1,148 @@
+#ifndef CALIBRATION_H__
+#define CALIBRATION_H__
+
+#include <vector>
+#include <cmath>
+#include <iostream>
+#include <fstream>
+#include "matrix/matrix.h"
+#include "dataf.h"
+
+namespace util{
+    
+/** base on image; first shift, then rotation, scale or stretch */
+struct calibrated{
+    double x_shift;
+    double y_shift;
+    double global_rot;				//in image rotation of x and y axis;make the x axis in horizon
+    double x_stretch_rot;			//after the global rotation, stretch x as x_stretch_rot
+    double y_stretch_rot;			//after the global rotation, stretch y as y_stretch_rot
+    double tilt_vector[3];			//a direct vector of tilt-plane & yOz plane
+    double tilt_angle;
+    double scale;
+    bool valid;
+};
+
+inline void PrintCalibrationAsImod(const std::vector<calibrated>& calib_v, const float rotation, 
+				   const float scale, const char* xffilename, const char* anglefilename, const char* exfilename){
+    std::ofstream out(xffilename); 
+    std::ofstream agout(anglefilename);
+    std::ofstream exceptf(exfilename); 
+    for(int i = 0; i < calib_v.size(); i++){
+	double cos_x_rot, sin_x_rot;
+	cos_x_rot = cos(calib_v[i].global_rot);
+	sin_x_rot = sin(calib_v[i].global_rot);
+	double cos_y_rot, sin_y_rot;
+	cos_y_rot = cos(calib_v[i].global_rot);
+	sin_y_rot = sin(calib_v[i].global_rot);
+	double A1[4] = {cos_x_rot, -sin_y_rot, sin_x_rot, cos_y_rot};
+	matrix_invert_inplace(2, A1);
+	
+	double cos_x_stretch_rot, sin_x_stretch_rot;
+	cos_x_stretch_rot = cos(calib_v[i].x_stretch_rot);
+	sin_x_stretch_rot = sin(calib_v[i].x_stretch_rot);
+	double cos_y_stretch_rot, sin_y_stretch_rot;
+	cos_y_stretch_rot = cos(calib_v[i].y_stretch_rot);
+	sin_y_stretch_rot = sin(calib_v[i].y_stretch_rot);
+	double A2[4] = {cos_x_stretch_rot, -sin_y_stretch_rot, sin_x_stretch_rot, cos_y_stretch_rot};
+	matrix_invert_inplace(2, A2);
+	
+	double A[4];	//A = A2*A1
+	matrix_product(2, 2, 2, 2, A2, A1, A);
+	
+	double dx = A[0]*calib_v[i].x_shift+A[1]*calib_v[i].y_shift;
+	double dy = A[2]*calib_v[i].x_shift+A[3]*calib_v[i].y_shift;
+
+	if(calib_v[i].valid){
+	    out<<(A[0]*cos(rotation)+A[1]*sin(rotation))/calib_v[i].scale
+               <<"\t"<<(-A[0]*sin(rotation)+A[1]*cos(rotation))/calib_v[i].scale
+               <<"\t"<<(A[2]*cos(rotation)+A[3]*sin(rotation))/calib_v[i].scale
+               <<"\t"<<(-A[2]*sin(rotation)+A[3]*cos(rotation))/calib_v[i].scale
+               <<"\t"<<dx*scale/calib_v[i].scale<<"\t"<<dy*scale/calib_v[i].scale<<std::endl;
+	}
+	else{
+	    out<<1<<"\t"<<0<<"\t"<<0<<"\t"<<1<<"\t"<<0<<"\t"<<0<<std::endl;
+	    exceptf<<i<<" "<<std::endl;
+	}
+	agout<<calib_v[i].tilt_angle/M_PI*180<<std::endl;
+    }
+    out.close();
+    agout.close();
+}
+
+//add by wanglianshan ---chongxie
+inline void writeIMODfidModel(util::TrackSpace& trackspace, int width, int height, int num_frames, const char* filename)
+{
+    std::vector<std::vector<pt3> > T;
+    int zerotilt = num_frames / 2 + num_frames % 2 - 1;
+    const unsigned int minTrajectoryLength =(10 > (int)(num_frames * 0.1)) ? 10 : (int)(num_frames * 0.1);
+//     const unsigned int minTrajectoryLength =(int)(num_frames * 0.8);
+    std::cout<<"minTrajectoryLength = "<<minTrajectoryLength<<std::endl;
+    
+    
+     for(int i = 0; i < trackspace.Size(); i++){
+        util::TrackSpace::Iterator itr = trackspace.Z_Iterator(i);
+	
+        while(!itr.IsNULL()){
+
+            util::TrackSpace::TrackNode node_itr = util::TrackSpace::TrackNode(itr);
+	    std::vector<pt3> Points ;
+	    bool isStart = node_itr.IsBegin();
+	    if(isStart){
+		while(!node_itr.IsNULL()){
+                    pt3 point3d;   
+		    point3d.x = node_itr.X();
+		    point3d.y = node_itr.Y();
+		    point3d.z = node_itr.Z();
+		    Points.push_back(point3d);
+		    node_itr++;
+		}
+	    }
+            
+            if(Points.size() > minTrajectoryLength){
+		T.push_back(Points);
+	    }
+	    
+	    Points.clear();
+
+            itr++;
+        }
+    }
+    
+    std::ofstream out(filename); 
+    out << "imod 1" << std::endl;
+    out << "max " << width << " " << height << " " << num_frames<< std::endl;
+    out << "offsets 0 0 0" << std::endl;
+    out << "angles 0 0 0" << std::endl;
+    out << "scale 1 1 1" << std::endl;
+    out << "mousemode 1" << std::endl;
+    out << "drawmode 1" << std::endl;
+    out << "b&w_level 0,200" << std::endl;
+    out << "resolution 3" << std::endl;
+    out << "threshold 128" << std::endl;
+    out << "pixsize 1" << std::endl;
+    out << "units pixels" << std::endl;
+    out << "symbol circle"<< std::endl;//so imod displays all the markers at once
+    out << "size 7"<<std::endl;
+
+    out << "object 0 " << T.size() << " 0" << std::endl;
+    out << "name" << std::endl;
+    out << "color 0 1 0 0" << std::endl;
+    out << "open" << std::endl;
+    out << "linewidth 1" << std::endl;
+    out << "surfsize  0" << std::endl;
+    out << "pointsize 0" << std::endl;
+    out << "axis      0" << std::endl;
+    out << "drawmode  1" << std::endl;
+    
+    for(int i=0 ; i< T.size() ; i++){
+	out << "contour " << i << " 0 " << T[i].size() << std::endl;
+	for(int j =0; j< T[i].size() ; j++){
+	    out << T[i][j].x<< " " <<T[i][j].y<< " " << T[i][j].z<< std::endl;
+	}
+    }
+}
+
+}
+
+#endif
