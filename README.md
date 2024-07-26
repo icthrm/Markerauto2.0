@@ -167,5 +167,5 @@ After users use Markerauto2 to obtain optimized projection parameters, they can 
   
 - **For IMOD:**
   ```bash
-  mrcstack -i BBa.st -o BBa_fin.mrc -x BBa_fin.xf
+  newsatck -i BBa.st -o BBa_fin.mrc -x BBa_fin.xf
 
