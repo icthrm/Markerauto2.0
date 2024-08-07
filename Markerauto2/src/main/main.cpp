@@ -18,7 +18,7 @@ int main(int argc, char **argv)
     int tmp_dia=24;
 
     cout<<CV_VERSION<<endl;
-    EX_TRACE("\nMARKERAUTO --version 1.6.3\n")
+    EX_TRACE("\nMARKERAUTO --version 2.0.0\n")
 
     struct options opts;
     opts.diameter = -1;
