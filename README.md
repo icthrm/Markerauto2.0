@@ -18,7 +18,7 @@ Note that Markerauto2 depends on and uses several external programs and librarie
 - **CMake**
     ```bash
   sudo apt install cmake
-- **Opencv4.5 (C++ version)**
+- **Opencv4.5.5 (C++ version)**
     ```bash
   sudo apt-get install build-essential cmake git libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev
     Download the Opencv4.5.0 installation package (https://opencv.org/releases/).
@@ -29,7 +29,7 @@ Note that Markerauto2 depends on and uses several external programs and librarie
     cmake -DCMAKE_BUILD_TYPE=Release -DOPENCV_GENERATE_PKGCONFIG=ON -DCMAKE_INSTALL_PREFIX=/usr/local ..
     make -j2
     sudo make install
-- **Opencv4.5 (C++ version)**
+- **Ceres-Solver2.1 (C++ version)**
     ```bash
     sudo apt-get install libeigen3-dev libatlas-base-dev libsuitesparse-dev
     git clone https://ceres-solver.googlesource.com/ceres-solver
